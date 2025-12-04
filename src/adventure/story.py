@@ -6,10 +6,8 @@ def step(choice: str, events):
 
     if choice == "left":
         return left_path(random_event)
-    elif choice == "right":
+    else choice == "right":
         return right_path(random_event)
-    else:
-        return "You stand still, unsure what to do. The forest swallows you."
 
 def left_path(event):
     return "You walk left. " + event
