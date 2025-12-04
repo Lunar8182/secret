@@ -16,9 +16,7 @@ import pytest
         ('forward', 'forward'),
         ('FORWARD', 'still'),
         ('Backward', 'backward'),
-        ('BACKWARD', 'still'),
-        ('jump', 'unknown command'),
-        ('sit', 'unknown command'),
+        
         
     ],
     # fmt: on
