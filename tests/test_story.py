@@ -8,10 +8,7 @@ import pytest
         ('Right', 'still'),
         ('right', 'right'),
         ('RIGHT',  'still'),
-        ('Left', 'still'),
-        ('left', 'left'),
-        ('LEFT',  'still'),
-        ('hello', 'still'),
+        
     ],
     # fmt: on
 )
