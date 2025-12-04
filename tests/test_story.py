@@ -10,7 +10,15 @@ import pytest
         ('RIGHT',  'still'),
         ('Right', 'still'),
         ('right', 'right'),
-        ('RIGHT',  'still'),
+        ('LEFT', 'left'),
+        ('left', 'left'),
+        ('Left', 'still'),
+        ('forward', 'forward'),
+        ('FORWARD', 'still'),
+        ('Backward', 'backward'),
+        ('BACKWARD', 'still'),
+        ('jump', 'unknown command'),
+        ('sit', 'unknown command'),
         
     ],
     # fmt: on
