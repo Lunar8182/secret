@@ -1,0 +1,111 @@
+name: Commit Achievements
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  award-badges:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install requests python-dateutil
+
+      - name: Analyze commit and award badges
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          NICKNAME: ${{ secrets.NICKNAME }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          python << 'EOF'
+          import os, requests
+          from dateutil import tz
+          from datetime import datetime
+          from dateutil import parser
+
+          emojis = [
+            "✨","💫","🪄","🌈","🎈","🎊","🌟","⚡","🔥",
+            "🧨","💥","⭐","🌀","🌠","🔮","🧿","🪅",
+            "🍜","🍩","🍪","🧋","🍉","🍓","🍊","🥟","🍕","🥑",
+            "🐼","🐧","🦄","🐥","🦊","🐸","🐉","🐢","🐙","🦋"]
+          
+
+          repo = os.environ["REPO"]
+          sha = os.environ["COMMIT_SHA"]
+          token = os.environ["GITHUB_TOKEN"]
+          webhook = os.environ["DISCORD_WEBHOOK"]
+          nickname = os.environ["NICKNAME"]
+          index = sum(ord(c) for c in nickname) % len(emojis)
+          prefix_emoji = emojis[index]
+
+          headers = {"Authorization": f"token {token}"}
+          commit_url = f"https://api.github.com/repos/{repo}/commits/{sha}"
+
+          r = requests.get(commit_url, headers=headers)
+          data = r.json()
+
+          eastern = tz.gettz("America/New_York")
+          commit_time = parser.parse(data["commit"]["author"]["date"])
+          commit_eastern = commit_time.astimezone(eastern)
+          hour = commit_eastern.hour
+
+          files = data.get("files", [])
+          additions = sum(f.get("additions", 0) for f in files)
+          deletions = sum(f.get("deletions", 0) for f in files)
+
+          filenames = [f["filename"] for f in files]
+
+          badges = []
+
+          # 🦉 Night Owl — committed after midnight (0-5 am)
+          if hour < 5:
+            badges.append(("🦉", "Night Owl"))
+          elif hour < 10:
+            # 🌅 Early Bird — committed before 10am
+            badges.append(("🌅", "Early Bird"))
+
+
+          # 🧹 Code Janitor — deleted more code than added
+          if deletions > additions:
+            badges.append(("🧹", "Code Janitor"))
+
+          # 📚 Documentarian — touched README or docs/
+          if any(f.startswith("docs/") or "README" in f.upper() for f in filenames):
+            badges.append(("📚", "Documentarian"))
+
+          # 🧪 Test Driven — changed any test file
+          if any(f.startswith("tests/") or "test_" in f.lower() for f in filenames):
+            badges.append(("🧪", "Test Driven"))
+
+          if any('achievement-unlock.yml' in f.lower() for f in filenames):
+            badges.append(("🔫", "GitHub Actions Master"))
+            
+          if not badges:
+            print("No achievements earned.")
+            exit(0)
+
+          # Create Discord message
+          msgs = []
+          for emoji, name in badges:
+            msgs.append(f"\t-->-->{emoji} **{name}** unlocked!")
+
+          payload = {
+            "content": f"{prefix_emoji} New Achievements for **{nickname}** commit `{sha[:7]}` @ {hour} o'clock:\n" +
+                       "\n".join(msgs)
+          }
+
+          requests.post(webhook, json=payload)
+          print("Achievements sent to Discord!")
+          EOF
